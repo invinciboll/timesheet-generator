@@ -7,129 +7,114 @@ import csv
 import pdfkit
 from functools import partial
 
-class Logic():
-    def __init__(self):
-        self.window = tk.Tk()
-        self.window.title("Name List")
-        self.window.geometry("400x400")
-        self.window.bind('<Return>', self.add_name)
+import locale
+locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
 
-        self.left_frame = tk.Frame(self.window)
-        self.left_frame.pack(side='left', padx=20, pady=20, fill='y')
-        self.right_frame = tk.Frame(self.window)
-        self.right_frame.pack(side='right', padx=20, pady=20, fill='y')
+import tinydb
 
-        # Load names from CSV file
-        names = []
+def generate_pdf(file_path, content):
+    # Determine the platform and set the wkhtmltopdf path accordingly
+    if platform.system() == 'Windows':
+        wkhtmltopdf_path = os.path.join('tooling', 'wkhtmltopdf', 'bin', 'wkhtmltopdf.exe')
+    else:  # Assuming Fedora or other Linux distributions
+        wkhtmltopdf_path = '/usr/bin/wkhtmltopdf'  # Default installation path for Fedora
+
+    options = {
+        'page-size': 'A4',
+        'margin-top': '0mm',
+        'margin-right': '0mm',
+        'margin-bottom': '0mm',
+        'margin-left': '0mm',
+    }
+    # Configure pdfkit with the correct path
+    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+    # Generate the PDF
+    return pdfkit.from_string(content, file_path, configuration=config, options=options)
+
+def get_workdays(month, year):
+    weekdays = []
+    for i in range(1, 32):
         try:
-            with open('names.csv', 'r') as csvfile:
-                csvreader = csv.reader(csvfile)
-                names = [row[0] for row in csvreader]
-        except FileNotFoundError:
-            pass
-        
-        self.names_and_vars = []
-        for name in names:
-            name_frame = tk.Frame(self.left_frame)
-            name_frame.pack(anchor='w', pady=5)
+            date = datetime(year, month, i)
+            weekdays.append((date.strftime('%d.%m'), date.strftime('%A'), date.isocalendar()[1]))
+        except ValueError:
+            break
 
-            var = tk.IntVar(value=1)
-            checkbox = tk.Checkbutton(name_frame, text=name, variable=var)
-            checkbox.pack(side='left')
+    # Filter out weekends
+    workdays = [day for day in weekdays if day[1] not in ['Samstag', 'Sonntag']]
 
-            delete_button = tk.Button(name_frame, text="X", command=partial(self.delete_name, name_frame, name))
-            delete_button.pack(side='left', padx=5)
+    # Group workdays by calendar weeks
+    workdays_by_week = {}
+    for day in workdays:
+        week_number = day[2]
+        if week_number not in workdays_by_week:
+            workdays_by_week[week_number] = []
+        workdays_by_week[week_number].append((day[0], day[1]))
+    # If the week does not start with monday, add --- placeholders to the beginning so each week has 5 workdays
+    for week in workdays_by_week:
+        if workdays_by_week[week][0][1] != 'Montag':
+            insert_days = 5 - len(workdays_by_week[week])
+            workdays_by_week[week] = [('---', '---')]*insert_days + workdays_by_week[week]
+        elif len(workdays_by_week[week]) < 5:
+            insert_days = 5 - len(workdays_by_week[week])
+            workdays_by_week[week] += [('---', '---')]*insert_days
+    return workdays_by_week
 
-            self.names_and_vars.append((name, var))
+def fill_table_rows_for_week(workdays):
+    with open('table-row.html') as f:
+        table_row = f.read()
+    table_rows = ""
+    for date, weekday in workdays:
+        table_rows += table_row.replace('{date}', date).replace('{weekday}', weekday)
+    return table_rows
 
-        self.entry = tk.Entry(self.right_frame, width=25)
-        self.entry.pack(anchor='n')
-        add_button = tk.Button(self.right_frame, text="Hinzufügen", command=self.add_name, width=20)
-        add_button.pack(anchor='n')
+def build_template_for_week(year, month_name, week, workdays, first_name, last_name, pers_nr):
+    with open('table-body-start.html') as f:
+        template_start = f.read()
+    template_start = template_start.replace('{month}', month_name).replace('{year}', str(year)).replace('{week}', str(week)).replace('{firstName}', first_name).replace('{lastName}', last_name).replace('{persNr}', pers_nr)
+    table_rows = fill_table_rows_for_week(workdays)
+    with open('table-body-end.html') as f:
+        template_end = f.read()
+    return template_start + table_rows + template_end
 
-        print_button = tk.Button(self.right_frame, text="Drucken", command=self.print_pdf, width=20)
-        print_button.pack()
+def add_member(firstname, lastname, persnr):
+    db = tinydb.TinyDB('members.json')
+    db.insert({'firstname': firstname, 'lastname': lastname, 'persnr': persnr})
 
-        export_button = tk.Button(self.right_frame, text="PDF exportieren", command=self.export_pdf, width=20)
-        export_button.pack()
+def generate_files(month: int, year: int):
+    month_name = datetime.strptime(str(month), "%m").strftime("%B")
+    dateinfo = get_workdays(month, year)
 
-    def run(self):
-        self.window.mainloop()
+    db = tinydb.TinyDB('members.json')
+    members = db.all()
 
-    def add_name(self, event=None):
-        new_name = self.entry.get()
-        if new_name:
-            name_frame = tk.Frame(self.left_frame)
-            name_frame.pack(anchor='w', pady=5)
+    timesheets = []
+    for week, workdays in dateinfo.items():
+        for member in members:
+            out = build_template_for_week(2024, month_name, week, workdays, member['firstname'], member['lastname'], member['persnr'])
+            timesheets.append(out)
 
-            var = tk.IntVar(value=1)
-            checkbox = tk.Checkbutton(name_frame, text=new_name, variable=var)
-            checkbox.pack(side='left')
+    if os.path.exists(f'output_{month_name}.pdf'):
+        os.remove(f'output_{month_name}.pdf')
 
-            delete_button = tk.Button(name_frame, text="x", command=partial(self.delete_name, name_frame, new_name))
-            delete_button.pack(side='left', padx=5)
+    with open("a4-wrapper.html") as f:
+        a4_wrapper_original = f.read()
 
-            self.names_and_vars.append((new_name, var))
-
-            with open('names.csv', 'a', newline='') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([new_name])
-
-            self.entry.delete(0, tk.END)
-
-    def delete_name(self, frame, name):
-        frame.destroy()
-        self.names_and_vars = [nv for nv in self.names_and_vars if nv[0] != name]
-        self.update_csv()
-
-    def update_csv(self):
-        with open('names.csv', 'w', newline='') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            for child in self.left_frame.winfo_children():
-                if isinstance(child, tk.Frame):
-                    name = child.winfo_children()[0].cget("text")
-                    csvwriter.writerow([name])
-    
-    def generate_table(self, name):
-        kw = datetime.now().strftime("%V")
-        with open('template.html') as f:
-            table_content =  f.read()
-        return table_content
-    
-    def generate_pdf(self, file_path):
-        html_content = "<html><body>"
-        for name, var in self.names_and_vars:
-            if var.get() == 1:
-                table = self.generate_table(name)
-                html_content += table
-        html_content += "</body></html>"
-
-        # Determine the platform and set the wkhtmltopdf path accordingly
-        if platform.system() == 'Windows':
-            wkhtmltopdf_path = os.path.join('tooling', 'wkhtmltopdf', 'bin', 'wkhtmltopdf.exe')
-        else:  # Assuming Fedora or other Linux distributions
-            wkhtmltopdf_path = '/usr/bin/wkhtmltopdf'  # Default installation path for Fedora
-
-        # Configure pdfkit with the correct path
-        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
-
-        # Generate the PDF
-        return pdfkit.from_string(html_content, file_path, configuration=config)
-    
-    def print_pdf(self):
-        file_path = 'output.pdf'
-        if self.generate_pdf(file_path):
-            try:
-                os.startfile(file_path, 'print')
-                print(f"Opening print menu for {file_path}...")
-            except OSError:
-                print("Error opening print menu.")
+    # iterate over two timesheets at a time
+    for i in range(0, len(timesheets), 2):
+        a4_wrapper = a4_wrapper_original
+        a4_wrapper = a4_wrapper.replace('{content1}', timesheets[i])
+        if i + 1 < len(timesheets):
+            a4_wrapper = a4_wrapper.replace('{content2}', timesheets[i + 1])
         else:
-            print("Error generating PDF.")
-
-    def export_pdf(self):
-        pdf = self.generate_pdf('output.pdf')
+            a4_wrapper = a4_wrapper.replace('{content2}', "")
+        generate_pdf(f'output_{month_name}_{i}.pdf', a4_wrapper)
+        exit(1)
 
 if __name__ == "__main__":
-    logic = Logic()
-    logic.run()
+    # with open('fulltable.html') as f:
+    #     table_content =  f.read()
+    # generate_pdf('xy.pdf', table_content)
+
+    generate_files(8, 2024)

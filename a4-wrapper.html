@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Page PDF</title>
+    <style>
+        /* Ensure the HTML and body take up the full size of the page */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
+        /* Style for the A5 divs */
+        .a5-wrapper {
+            position: absolute;
+            width: calc(100% - 4cm); /* Total width minus padding (2cm left + 2cm right) */
+            height: 50%; /* Total height minus padding (2cm top) */
+            box-sizing: border-box;
+            padding-left: 3cm;
+            padding-right: 1cm;
+            overflow: hidden; /* Hide overflow if necessary */
+            padding-top: 1cm;
+        }
+
+        /* Top A5 section */
+        .a5-wrapper.top {
+            top: 0;
+            left: 0;
+            border-bottom: 2px dashed black;
+        }
+
+        /* Bottom A5 section */
+        .a5-wrapper.bottom {
+            bottom: 0;
+            left: 0;
+        }
+
+        .header {
+            text-align: center;
+            padding-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .tg {
+            border-collapse: collapse;
+            border-spacing: 0;
+            page-break-inside: avoid;
+        }
+
+        .tg.frame {
+            border: thick double black;
+        }
+
+        .tg td {
+            border-color: black;
+            border-style: solid;
+            border-width: 1px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            overflow: hidden;
+            padding: 8px 10px;
+            word-break: normal;
+        }
+
+        .tg th {
+            border-color: black;
+            border-style: solid;
+            border-width: 1px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: normal;
+            overflow: hidden;
+            padding: 5px 10px;
+            word-break: normal;
+        }
+
+        .tr-workday-top {
+            border-top: 2px solid black;
+        }
+
+        .tr-workday-bottom {
+            border-bottom: 2px solid black;
+        }
+
+        .tg .tg-cly1 {
+            text-align: left;
+            vertical-align: middle
+        }
+
+        .tg .tg-lboi {
+            border-color: inherit;
+            text-align: left;
+            vertical-align: middle
+        }
+
+        .tg .tg-jwvy {
+            border-color: inherit;
+            font-size: small;
+            text-align: left;
+            vertical-align: middle
+        }
+
+        .tg .tg-9wq8 {
+            border-color: inherit;
+            text-align: center;
+            vertical-align: middle
+        }
+
+        .tg .tg-g7sd {
+            border-color: inherit;
+            text-align: left;
+            vertical-align: middle
+        }
+
+        .tg .tg-b08v {
+            border-color: inherit;
+            font-size: x-small;
+            text-align: center;
+            vertical-align: middle
+        }
+    </style>
+</head>
+
+<body>
+    <div class="a5-wrapper top">
+        {content1}
+    </div>
+    <div class="a5-wrapper bottom">
+        {content2}
+    </div>
+</body>
+
+</html>
