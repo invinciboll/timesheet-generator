@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import platform
 import tkinter as tk
 from tkinter import messagebox
 import csv
@@ -91,54 +92,30 @@ class Logic():
     
     def generate_table(self, name):
         kw = datetime.now().strftime("%V")
-        table_content = f'<table> \
-            <thead>\
-                <tr>\
-                    <th>Name<br></th>\
-                    <th>{name}</th>\
-                    <th>KW</th>\
-                    <th>{kw}</th>\
-                </tr>\
-            </thead>\
-            <tbody>\
-                <tr>\
-                    <td>Mo</td>\
-                    <td colspan="3"></td>\
-                </tr>\
-                <tr>\
-                    <td>Di</td>\
-                    <td colspan="3"></td>\
-                </tr>\
-                <tr>\
-                    <td>Mi</td>\
-                    <td colspan="3"></td>\
-                </tr>\
-                <tr>\
-                    <td>Do</td>\
-                    <td colspan="3"></td>\
-                </tr>\
-                <tr>\
-                    <td>Fr</td>\
-                    <td colspan="3"></td>\
-                </tr>\
-                <tr>\
-                    <td></td>\
-                    <td colspan="3"></td>\
-                </tr>\
-            </tbody>\
-        </table>'
+        with open('template.html') as f:
+            table_content =  f.read()
         return table_content
     
     def generate_pdf(self, file_path):
-        html_content = f"<html><body>"
+        html_content = "<html><body>"
         for name, var in self.names_and_vars:
             if var.get() == 1:
-                table = self.generate_table(name)#
+                table = self.generate_table(name)
                 html_content += table
-        html_content += f"</body></html>"
-        return pdfkit.from_string(html_content, file_path, configuration=pdfkit.configuration(wkhtmltopdf='tooling/wkhtmltopdf/bin/wkhtmltopdf.exe'))
-        
+        html_content += "</body></html>"
 
+        # Determine the platform and set the wkhtmltopdf path accordingly
+        if platform.system() == 'Windows':
+            wkhtmltopdf_path = os.path.join('tooling', 'wkhtmltopdf', 'bin', 'wkhtmltopdf.exe')
+        else:  # Assuming Fedora or other Linux distributions
+            wkhtmltopdf_path = '/usr/bin/wkhtmltopdf'  # Default installation path for Fedora
+
+        # Configure pdfkit with the correct path
+        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+        # Generate the PDF
+        return pdfkit.from_string(html_content, file_path, configuration=config)
+    
     def print_pdf(self):
         file_path = 'output.pdf'
         if self.generate_pdf(file_path):
@@ -151,11 +128,7 @@ class Logic():
             print("Error generating PDF.")
 
     def export_pdf(self):
-        print(self.names_and_vars)
-
-
-
-
+        pdf = self.generate_pdf('output.pdf')
 
 if __name__ == "__main__":
     logic = Logic()
