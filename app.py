@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, send_file, send_from_directory
+from flask import Flask, render_template, request, send_file
 from tinydb import TinyDB
-from run import generate_file
+from tools import generate_file
 
 app = Flask(__name__)
+data_path = 'data/members.json'
 
 # Initialize TinyDB with the JSON file
-db = TinyDB('members.json')
+db = TinyDB(data_path)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -35,4 +36,4 @@ def delete_member(doc_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False, port=80)

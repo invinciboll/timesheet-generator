@@ -5,8 +5,6 @@ import pdfkit
 from PyPDF2 import PdfReader, PdfWriter
 
 import locale
-
-
 import tinydb
 
 def generate_pdf(file_path, content:str):
@@ -22,7 +20,12 @@ def generate_pdf(file_path, content:str):
         'margin-right': '0mm',
         'margin-bottom': '0mm',
         'margin-left': '0mm',
+        'disable-smart-shrinking': '',
+        'zoom': '1.0',  # Default zoom level
+        'dpi': '96',  # Explicit DPI setting
+        'viewport-size': '1280x1024'  # Specify viewport size
     }
+    print(content)
     # Configure pdfkit with the correct path
     config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
@@ -76,13 +79,13 @@ def build_template_for_week(year, month_name, week, workdays, first_name, last_n
     return template_start + table_rows + template_end
 
 def generate_file(month: int, year: int):
-    locale.setlocale(locale.LC_TIME, 'de_DE')
+    locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
     print(locale.getlocale(locale.LC_TIME))
     month_name = datetime.strptime(str(month), "%m").strftime("%B")
     print(month_name)
     dateinfo = get_workdays(month, year)
 
-    db = tinydb.TinyDB('members.json')
+    db = tinydb.TinyDB('data/members.json')
     members = db.all()
 
     timesheets = []
@@ -90,7 +93,7 @@ def generate_file(month: int, year: int):
         for member in members:
             out = build_template_for_week(2024, month_name, week, workdays, member['firstname'], member['lastname'], member['persnr'])
             timesheets.append(out)
-
+    print(f"Generated {len(timesheets)} timesheets")
     if os.path.exists(f'generated_timesheets.pdf'):
         os.remove(f'generated_timesheets.pdf')
 
