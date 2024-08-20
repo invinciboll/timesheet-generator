@@ -25,7 +25,7 @@ def generate_pdf(file_path, content:str):
         'dpi': '96',  # Explicit DPI setting
         'viewport-size': '1280x1024'  # Specify viewport size
     }
-    print(content)
+
     # Configure pdfkit with the correct path
     config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
