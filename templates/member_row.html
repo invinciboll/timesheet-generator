@@ -1,0 +1,11 @@
+<tr id="member-{{ member.doc_id }}">
+    <td>{{ member.firstname }}</td>
+    <td>{{ member.lastname }}</td>
+    <td>{{ member.persnr }}</td>
+    <td>
+        <button class="btn btn-primary"
+                hx-delete="/delete-member/{{ member.doc_id }}"
+                hx-target="#member-{{ member.doc_id }}"
+                hx-swap="outerHTML:remove">Löschen</button>
+    </td>
+</tr>

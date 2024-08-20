@@ -1,18 +1,15 @@
 from datetime import datetime
 import os
 import platform
-import tkinter as tk
-from tkinter import messagebox
-import csv
 import pdfkit
-from functools import partial
+from PyPDF2 import PdfReader, PdfWriter
 
 import locale
-locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+
 
 import tinydb
 
-def generate_pdf(file_path, content):
+def generate_pdf(file_path, content:str):
     # Determine the platform and set the wkhtmltopdf path accordingly
     if platform.system() == 'Windows':
         wkhtmltopdf_path = os.path.join('tooling', 'wkhtmltopdf', 'bin', 'wkhtmltopdf.exe')
@@ -78,12 +75,11 @@ def build_template_for_week(year, month_name, week, workdays, first_name, last_n
         template_end = f.read()
     return template_start + table_rows + template_end
 
-def add_member(firstname, lastname, persnr):
-    db = tinydb.TinyDB('members.json')
-    db.insert({'firstname': firstname, 'lastname': lastname, 'persnr': persnr})
-
-def generate_files(month: int, year: int):
+def generate_file(month: int, year: int):
+    locale.setlocale(locale.LC_TIME, 'de_DE')
+    print(locale.getlocale(locale.LC_TIME))
     month_name = datetime.strptime(str(month), "%m").strftime("%B")
+    print(month_name)
     dateinfo = get_workdays(month, year)
 
     db = tinydb.TinyDB('members.json')
@@ -95,12 +91,12 @@ def generate_files(month: int, year: int):
             out = build_template_for_week(2024, month_name, week, workdays, member['firstname'], member['lastname'], member['persnr'])
             timesheets.append(out)
 
-    if os.path.exists(f'output_{month_name}.pdf'):
-        os.remove(f'output_{month_name}.pdf')
+    if os.path.exists(f'generated_timesheets.pdf'):
+        os.remove(f'generated_timesheets.pdf')
 
     with open("a4-wrapper.html") as f:
         a4_wrapper_original = f.read()
-
+    filenames = []
     # iterate over two timesheets at a time
     for i in range(0, len(timesheets), 2):
         a4_wrapper = a4_wrapper_original
@@ -109,12 +105,19 @@ def generate_files(month: int, year: int):
             a4_wrapper = a4_wrapper.replace('{content2}', timesheets[i + 1])
         else:
             a4_wrapper = a4_wrapper.replace('{content2}', "")
-        generate_pdf(f'output_{month_name}_{i}.pdf', a4_wrapper)
-        exit(1)
+        generate_pdf(f'output_{i}.pdf', a4_wrapper)
+        filenames.append(f'output_{i}.pdf')
 
-if __name__ == "__main__":
-    # with open('fulltable.html') as f:
-    #     table_content =  f.read()
-    # generate_pdf('xy.pdf', table_content)
+    pdf_writer = PdfWriter()
+    for pdf_path in filenames:
+        pdf_reader = PdfReader(pdf_path)
+        for page in pdf_reader.pages:
+            pdf_writer.add_page(page)
 
-    generate_files(8, 2024)
+    with open(f'generated_timesheets.pdf', 'wb') as output_pdf:
+        pdf_writer.write(output_pdf)
+
+    for pdf in filenames:
+        os.remove(pdf)
+
+    return f'generated_timesheets.pdf'

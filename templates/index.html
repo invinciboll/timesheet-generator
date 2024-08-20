@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timesheet Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        .container {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .col-md-6 {
+            padding: 20px;
+        }
+        .form-container, .table-container {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .form-container {
+            padding: 20px;
+        }
+        .table-container {
+            padding: 20px;
+        }
+        /* Override Bootstrap button colors */
+        .btn-primary {
+            background-color: #ffcc00; /* Yellow background */
+            border-color: #ffcc00; /* Same color for the border */
+            color: black; /* Black text color */
+        }
+
+        .btn-primary:hover {
+            background-color: #e6b800; /* Darker yellow on hover */
+            border-color: #e6b800; /* Same color for the border on hover */
+            color: black; /* Black text color remains */
+        }
+
+        .btn-primary:focus, .btn-primary.focus {
+            box-shadow: 0 0 0 0.2rem rgba(255, 204, 0, 0.5); /* Adjust focus shadow */
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 form-container">
+                <h1 class="mb-4">PDF generieren</h1>
+                <form method="post" class="mb-4">
+                    <div class="mb-3">
+                        <label for="month" class="form-label">Monat:</label>
+                        <select id="month" name="month" class="form-select" required>
+                            <option value="" disabled selected>Wählen Sie einen Monat</option>
+                            <option value="1">Januar</option>
+                            <option value="2">Februar</option>
+                            <option value="3">März</option>
+                            <option value="4">April</option>
+                            <option value="5">Mai</option>
+                            <option value="6">Juni</option>
+                            <option value="7">Juli</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Dezember</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="year" class="form-label">Jahr:</label>
+                        <select id="year" name="year" class="form-select" required>
+                            <option value="" disabled selected>Wählen Sie ein Jahr</option>
+                            {% for year in range(2024, 2035) %}
+                            <option value="{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3 text-end">
+                        <button type="submit" class="btn btn-primary">PDF Generieren</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-md-6 form-container">
+                <h1 class="mb-4">Mitarbeiter hinzufügen</h1>
+                <form method="post" hx-post="/add-member" hx-target="#member-list" hx-swap="beforeend">
+                    <div class="row mb-3">
+                        <div class="col-sm-4">
+                            <label for="firstname" class="form-label">Vorname:</label>
+                            <input type="text" id="firstname" name="firstname" class="form-control" required>
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="lastname" class="form-label">Nachname:</label>
+                            <input type="text" id="lastname" name="lastname" class="form-control" required>
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="persnr" class="form-label">Personalnummer:</label>
+                            <input type="text" id="persnr" name="persnr" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3 text-end">
+                        <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- New row for the table -->
+        <div class="row">
+            <div class="col-12 table-container">
+                <h1 class="mb-4">Mitarbeiterliste</h1>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Vorname</th>
+                            <th>Nachname</th>
+                            <th>Personalnummer</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="member-list">
+                        {% for member in members %}
+                        <tr id="member-{{ member.doc_id }}">
+                            <td>{{ member.firstname }}</td>
+                            <td>{{ member.lastname }}</td>
+                            <td>{{ member.persnr }}</td>
+                            <td>
+                                <button class="btn btn-primary" hx-delete="/delete-member/{{ member.doc_id }}"
+                                    hx-target="#member-{{ member.doc_id }}" hx-swap="outerHTML:remove">Löschen</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
