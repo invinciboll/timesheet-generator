@@ -5,12 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    expose:
-      - "5111"
     volumes:
       - ./timesheet-generator:/app/data
     networks:
-      - caddy-proxy_caddy
+      - caddy-adguard_caddy
 
 networks:
   caddy-proxy_caddy:
