@@ -6,10 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ./timesheet-generator:/app/data
+      - ./data:/app/data
     networks:
       - caddy-adguard_caddy
 
 networks:
-  caddy-proxy_caddy:
+  caddy-adguard_caddy:
     external: true
