@@ -5,7 +5,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "80:80"
+    expose:
+      - "5111"
     volumes:
       - ./timesheet-generator:/app/data
+    networks:
+      - caddy-proxy_caddy
+
+networks:
+  caddy-proxy_caddy:
+    external: true

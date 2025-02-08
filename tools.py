@@ -91,7 +91,7 @@ def generate_file(month: int, year: int):
     timesheets = []
     for week, workdays in dateinfo.items():
         for member in members:
-            out = build_template_for_week(2024, month_name, week, workdays, member['firstname'], member['lastname'], member['persnr'])
+            out = build_template_for_week(year, month_name, week, workdays, member['firstname'], member['lastname'], member['persnr'])
             timesheets.append(out)
     print(f"Generated {len(timesheets)} timesheets")
     if os.path.exists(f'generated_timesheets.pdf'):
